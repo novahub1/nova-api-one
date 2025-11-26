@@ -1,7 +1,18 @@
 // api/animals-test.js
-// API DE TESTE - NÃO DELETA NADA (guarda tudo)
+// API com auto-delete após 3 segundos
 
 let animalsData = [];
+
+// Função para limpar dados antigos (mais de 3 segundos)
+function cleanOldData() {
+    const now = Date.now();
+    const THREE_SECONDS = 3000;
+    
+    animalsData = animalsData.filter(item => {
+        const age = now - item.timestamp;
+        return age < THREE_SECONDS;
+    });
+}
 
 export default async function handler(req, res) {
     // CORS
@@ -15,7 +26,10 @@ export default async function handler(req, res) {
         return;
     }
     
-    // POST - Receber animal (SEM DELETAR NADA)
+    // Limpar dados antigos antes de qualquer operação
+    cleanOldData();
+    
+    // POST - Receber animal
     if (req.method === 'POST') {
         try {
             const { animal } = req.body;
@@ -27,20 +41,19 @@ export default async function handler(req, res) {
                 });
             }
             
-            // Adiciona com timestamp mas NÃO DELETA
+            // Adiciona com timestamp para controle de deleção
             animalsData.push({
-                ...animal,
-                timestamp: Date.now(),
-                receivedAt: new Date().toISOString()
+                jobId: animal.jobId,
+                name: animal.name,
+                generation: animal.generation,
+                timestamp: Date.now() // Usado apenas internamente para deletar
             });
             
             console.log('Pet recebido:', animal.name, animal.generation);
             
+            // Resposta minimalista
             return res.status(200).json({
-                success: true,
-                message: 'Animal recebido com sucesso',
-                data: animal,
-                totalAnimals: animalsData.length
+                animal: null
             });
             
         } catch (error) {
@@ -51,27 +64,25 @@ export default async function handler(req, res) {
         }
     }
     
-    // GET - Retornar todos (NUNCA DELETA)
+    // GET - Retornar todos
     if (req.method === 'GET') {
+        // Remove timestamp antes de retornar
+        const cleanAnimals = animalsData.map(item => ({
+            jobId: item.jobId,
+            name: item.name,
+            generation: item.generation
+        }));
+        
         return res.status(200).json({
-            success: true,
-            totalAnimals: animalsData.length,
-            animals: animalsData,
-            info: {
-                message: "API DE TESTE - Dados nunca são deletados",
-                currentTime: new Date().toISOString()
-            }
+            animals: cleanAnimals
         });
     }
     
     // DELETE - Limpar tudo manualmente
     if (req.method === 'DELETE') {
-        const count = animalsData.length;
         animalsData = [];
         return res.status(200).json({
-            success: true,
-            message: `${count} animais deletados`,
-            totalAnimals: 0
+            animal: null
         });
     }
     
