@@ -1,33 +1,19 @@
 // api/animals-test.js
-// API com auto-delete após 3 segundos
+// API - Guarda todos os dados permanentemente
 
 let animalsData = [];
-
-// Função para limpar dados antigos (mais de 3 segundos)
-function cleanOldData() {
-    const now = Date.now();
-    const THREE_SECONDS = 3000;
-    
-    animalsData = animalsData.filter(item => {
-        const age = now - item.timestamp;
-        return age < THREE_SECONDS;
-    });
-}
 
 export default async function handler(req, res) {
     // CORS
     res.setHeader('Access-Control-Allow-Credentials', 'true');
     res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Methods', 'GET,POST,OPTIONS,DELETE');
+    res.setHeader('Access-Control-Allow-Methods', 'GET,POST,OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version');
     
     if (req.method === 'OPTIONS') {
         res.status(200).end();
         return;
     }
-    
-    // Limpa dados antigos antes de qualquer operação
-    cleanOldData();
     
     // POST - Receber animal
     if (req.method === 'POST') {
@@ -41,17 +27,15 @@ export default async function handler(req, res) {
                 });
             }
             
-            // Adiciona com timestamp (usado internamente para deletar)
+            // Adiciona os dados permanentemente
             animalsData.push({
                 jobId: animal.jobId,
                 name: animal.name,
-                generation: animal.generation,
-                timestamp: Date.now()
+                generation: animal.generation
             });
             
             console.log('Pet recebido:', animal.name, animal.generation);
             
-            // Resposta minimalista
             return res.status(200).json({
                 animal: null
             });
@@ -64,24 +48,10 @@ export default async function handler(req, res) {
         }
     }
     
-    // GET - Retornar todos (sem timestamp e receivedAt)
+    // GET - Retornar todos
     if (req.method === 'GET') {
-        const cleanAnimals = animalsData.map(item => ({
-            jobId: item.jobId,
-            name: item.name,
-            generation: item.generation
-        }));
-        
         return res.status(200).json({
-            animals: cleanAnimals
-        });
-    }
-    
-    // DELETE - Limpar tudo manualmente
-    if (req.method === 'DELETE') {
-        animalsData = [];
-        return res.status(200).json({
-            animal: null
+            animals: animalsData
         });
     }
     
