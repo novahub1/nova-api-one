@@ -1,136 +1,82 @@
-// api/animals.js
-// ========================================
-// API para receber e armazenar pets do Roblox
-// Auto-deleta dados após 3 segundos
-// ========================================
+// api/animals-test.js
+// API DE TESTE - NÃO DELETA NADA (guarda tudo)
 
-// Armazena os dados em memória (se precisar persistência, use banco de dados)
 let animalsData = [];
 
-// Função para limpar dados antigos (mais de 3 segundos)
-function cleanOldData() {
-    const now = Date.now();
-    const THREE_SECONDS = 3000;
-    
-    // Filtra apenas dados que têm menos de 3 segundos
-    animalsData = animalsData.filter(item => {
-        const age = now - item.timestamp;
-        return age < THREE_SECONDS;
-    });
-}
-
-// Função para adicionar novo animal
-function addAnimal(animalData) {
-    animalsData.push({
-        ...animalData,
-        timestamp: Date.now() // Adiciona timestamp de quando foi recebido
-    });
-}
-
-// Handler principal da API
 export default async function handler(req, res) {
-    // Configurar CORS ANTES de qualquer outra coisa
+    // CORS
     res.setHeader('Access-Control-Allow-Credentials', 'true');
     res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Methods', 'GET,POST,OPTIONS,DELETE,PUT,PATCH');
+    res.setHeader('Access-Control-Allow-Methods', 'GET,POST,OPTIONS,DELETE');
     res.setHeader('Access-Control-Allow-Headers', 'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version');
     
-    // Responder OPTIONS para CORS preflight
     if (req.method === 'OPTIONS') {
         res.status(200).end();
         return;
     }
     
-    // Limpar dados antigos antes de processar qualquer requisição
-    cleanOldData();
-    
-    // ========================================
-    // POST - Receber novo animal
-    // ========================================
+    // POST - Receber animal (SEM DELETAR NADA)
     if (req.method === 'POST') {
         try {
             const { animal } = req.body;
             
-            // Validar dados recebidos
             if (!animal || !animal.name || !animal.generation || !animal.jobId) {
                 return res.status(400).json({
                     success: false,
-                    error: 'Dados inválidos. Necessário: animal.name, animal.generation, animal.jobId'
+                    error: 'Dados inválidos'
                 });
             }
             
-            // Adicionar animal com timestamp
-            addAnimal(animal);
+            // Adiciona com timestamp mas NÃO DELETA
+            animalsData.push({
+                ...animal,
+                timestamp: Date.now(),
+                receivedAt: new Date().toISOString()
+            });
+            
+            console.log('Pet recebido:', animal.name, animal.generation);
             
             return res.status(200).json({
                 success: true,
                 message: 'Animal recebido com sucesso',
-                data: {
-                    name: animal.name,
-                    generation: animal.generation,
-                    jobId: animal.jobId,
-                    receivedAt: new Date().toISOString()
-                },
+                data: animal,
                 totalAnimals: animalsData.length
             });
             
         } catch (error) {
             return res.status(500).json({
                 success: false,
-                error: 'Erro ao processar dados',
-                details: error.message
+                error: error.message
             });
         }
     }
     
-    // ========================================
-    // GET - Retornar todos os animais ativos
-    // ========================================
+    // GET - Retornar todos (NUNCA DELETA)
     if (req.method === 'GET') {
-        const now = Date.now();
-        
-        // Adicionar informação de "idade" em cada animal
-        const animalsWithAge = animalsData.map(item => {
-            const ageInSeconds = ((now - item.timestamp) / 1000).toFixed(2);
-            const timeRemaining = (3 - parseFloat(ageInSeconds)).toFixed(2);
-            
-            return {
-                name: item.name,
-                generation: item.generation,
-                jobId: item.jobId,
-                ageInSeconds: parseFloat(ageInSeconds),
-                timeRemainingSeconds: Math.max(0, parseFloat(timeRemaining)),
-                receivedAt: new Date(item.timestamp).toISOString()
-            };
-        });
-        
-        // Agrupar por jobId para melhor visualização
-        const groupedByJob = {};
-        animalsWithAge.forEach(animal => {
-            if (!groupedByJob[animal.jobId]) {
-                groupedByJob[animal.jobId] = [];
-            }
-            groupedByJob[animal.jobId].push(animal);
-        });
-        
         return res.status(200).json({
             success: true,
             totalAnimals: animalsData.length,
-            totalServers: Object.keys(groupedByJob).length,
-            animals: animalsWithAge,
-            groupedByServer: groupedByJob,
+            animals: animalsData,
             info: {
-                autoDeleteAfter: '3 seconds',
+                message: "API DE TESTE - Dados nunca são deletados",
                 currentTime: new Date().toISOString()
             }
         });
     }
     
-    // ========================================
-    // Método não permitido
-    // ========================================
+    // DELETE - Limpar tudo manualmente
+    if (req.method === 'DELETE') {
+        const count = animalsData.length;
+        animalsData = [];
+        return res.status(200).json({
+            success: true,
+            message: `${count} animais deletados`,
+            totalAnimals: 0
+        });
+    }
+    
     return res.status(405).json({
         success: false,
-        error: 'Método não permitido. Use GET ou POST'
+        error: 'Método não permitido'
     });
 }
