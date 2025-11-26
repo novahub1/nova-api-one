@@ -28,15 +28,17 @@ function addAnimal(animalData) {
 }
 
 // Handler principal da API
-export default function handler(req, res) {
-    // Configurar CORS para aceitar requisições do Roblox
+export default async function handler(req, res) {
+    // Configurar CORS ANTES de qualquer outra coisa
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
     res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+    res.setHeader('Access-Control-Allow-Methods', 'GET,POST,OPTIONS,DELETE,PUT,PATCH');
+    res.setHeader('Access-Control-Allow-Headers', 'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version');
     
     // Responder OPTIONS para CORS preflight
     if (req.method === 'OPTIONS') {
-        return res.status(200).end();
+        res.status(200).end();
+        return;
     }
     
     // Limpar dados antigos antes de processar qualquer requisição
