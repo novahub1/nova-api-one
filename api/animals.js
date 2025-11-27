@@ -1,7 +1,17 @@
 // api/animals-test.js
-// API - Guarda todos os dados permanentemente
+// API - Dados são apagados automaticamente a cada 40 segundos EXATOS
 
 let animalsData = [];
+const CLEANUP_INTERVAL = 40000; // 40 segundos
+
+// Limpeza automática independente de requisições
+setInterval(() => {
+    const count = animalsData.length;
+    if (count > 0) {
+        animalsData = [];
+        console.log(`🔄 Limpeza automática: ${count} animais apagados`);
+    }
+}, CLEANUP_INTERVAL);
 
 export default async function handler(req, res) {
     // CORS
@@ -27,7 +37,6 @@ export default async function handler(req, res) {
                 });
             }
             
-            // Adiciona os dados permanentemente
             animalsData.push({
                 jobId: animal.jobId,
                 name: animal.name,
@@ -35,9 +44,11 @@ export default async function handler(req, res) {
             });
             
             console.log('Pet recebido:', animal.name, animal.generation);
+            console.log(`📊 Total de animais: ${animalsData.length}`);
             
             return res.status(200).json({
-                animal: null
+                animal: null,
+                message: `Dados serão apagados automaticamente em 40 segundos`
             });
             
         } catch (error) {
@@ -51,7 +62,8 @@ export default async function handler(req, res) {
     // GET - Retornar todos
     if (req.method === 'GET') {
         return res.status(200).json({
-            animals: animalsData
+            animals: animalsData,
+            total: animalsData.length
         });
     }
     
