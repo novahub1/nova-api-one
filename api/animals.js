@@ -1,9 +1,10 @@
 // api/animals-test.js
-const API_KEY = process.env.API_KEY || 'sua-chave-secreta-aqui';
+// API - Dados são apagados automaticamente a cada 40 segundos EXATOS
 
 let animalsData = [];
-const CLEANUP_INTERVAL = 40000;
+const CLEANUP_INTERVAL = 40000; // 40 segundos - Tempo de apagar os dados
 
+// Limpeza automática independente de requisições
 setInterval(() => {
     const count = animalsData.length;
     if (count > 0) {
@@ -17,20 +18,11 @@ export default async function handler(req, res) {
     res.setHeader('Access-Control-Allow-Credentials', 'true');
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'GET,POST,OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version, X-API-Key');
+    res.setHeader('Access-Control-Allow-Headers', 'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version');
     
     if (req.method === 'OPTIONS') {
         res.status(200).end();
         return;
-    }
-    
-    // Validar API Key
-    const apiKey = req.headers['x-api-key'];
-    if (!apiKey || apiKey !== API_KEY) {
-        return res.status(401).json({
-            success: false,
-            error: 'API Key inválida ou ausente'
-        });
     }
     
     // POST - Receber animal
